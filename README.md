@@ -1,51 +1,283 @@
-# InternalAuditValidationSystem Crew
+# Internal Audit Validation System
 
-Welcome to the InternalAuditValidationSystem Crew project, powered by [crewAI](https://crewai.com). This template is designed to help you set up a multi-agent AI system with ease, leveraging the powerful and flexible framework provided by crewAI. Our goal is to enable your agents to collaborate effectively on complex tasks, maximizing their collective intelligence and capabilities.
+An end-to-end GenAI workflow demonstrating **multi-agent orchestration**, **RAG (Retrieval-Augmented Generation)**, and **multi-provider LLM integration**. Built with crewAI, this system connects LLMs with internal proprietary data to validate audit observations against Hong Kong regulatory policies (HKMA and SFC). Features a 5-stage pipeline with parallel retrieval, reflection-revision quality loops, and automated evaluation.
+
+## Key Features
+
+| Capability | Implementation |
+|------------|----------------|
+| **End-to-End GenAI Workflow** | 5-stage sequential pipeline with parallel retrieval |
+| **Multi-Agent Architecture** | 4 specialized agents with distinct roles and tools |
+| **RAG (Retrieval-Augmented Generation)** | Web search, PDF extraction, document parsing |
+| **Multi-Provider LLM Support** | OpenAI, Anthropic, Google, DeepSeek, Groq, Ollama |
+| **Internal Data Integration** | Connects LLMs with proprietary audit observations |
+| **Quality Assurance** | Reflection-revision loop with automated evaluation |
+
+
+## Workflow Architecture
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                    INTERNAL AUDIT VALIDATION SYSTEM                         │
+│                         Multi-Agent Workflow                                │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+                            ┌──────────────────┐
+                            │  Audit           │
+                            │  Observation     │
+                            │  (Input)         │
+                            └────────┬─────────┘
+                                     │
+        ═════════════════════════════╪═════════════════════════════════
+        ║            STAGE 1: PARALLEL POLICY RETRIEVAL               ║
+        ═════════════════════════════╪═════════════════════════════════
+                                     │
+                    ┌────────────────┴────────────────┐
+                    │                                 │
+                    ▼                                 ▼
+        ┌───────────────────────┐       ┌───────────────────────┐
+        │  HKMA Policy          │       │  SFC Policy           │
+        │  Retrieval Specialist │       │  Retrieval Specialist │
+        │  (max 25 iterations)  │       │  (max 25 iterations)  │
+        │                       │       │                       │
+        │  Tools:               │       │  Tools:               │
+        │  • RobustFileRead     │       │  • RobustFileRead     │
+        │  • SecureWebScraper   │       │  • SecureWebScraper   │
+        │  • PDFDownload        │       │  • PDFDownload        │
+        │  • SerperDev(10)      │       │  • SerperDev(10)      │
+        └───────────┬───────────┘       └───────────┬───────────┘
+                    │                               │
+                    ▼                               ▼
+        ┌───────────────────────┐       ┌───────────────────────┐
+        │ hkma_policy_          │       │ sfc_policy_           │
+        │ retrieval.md          │       │ retrieval.md          │
+        └───────────┬───────────┘       └───────────┬───────────┘
+                    │                               │
+                    └────────────────┬──────────────┘
+                                     │
+        ═════════════════════════════╪═════════════════════════════════
+        ║            STAGE 2: POLICY AGGREGATION                      ║
+        ═════════════════════════════╪═════════════════════════════════
+                                     │
+                                     ▼
+                        ┌───────────────────────┐
+                        │  Policy Aggregator    │
+                        │  (max 15 iterations)  │
+                        │                       │
+                        │  • Consolidates       │
+                        │  • Deduplicates       │
+                        │  • Normalizes         │
+                        │  (NO new retrieval)   │
+                        └───────────┬───────────┘
+                                    │
+                                    ▼
+                        ┌───────────────────────┐
+                        │ policy_retrieval_     │
+                        │ aggregated.md         │
+                        └───────────┬───────────┘
+                                    │
+        ════════════════════════════╪══════════════════════════════════
+        ║            STAGE 3: QUALITY REFLECTION                      ║
+        ════════════════════════════╪══════════════════════════════════
+                                    │
+                                    ▼
+                        ┌───────────────────────┐
+                        │  Senior Audit         │
+                        │  Reviewer             │
+                        │  (max 15 iterations)  │
+                        │                       │
+                        │  • Validates URLs     │
+                        │  • Checks citations   │
+                        │  • Verifies dates     │
+                        │  (NO tools - context  │
+                        │   based review)       │
+                        └───────────┬───────────┘
+                                    │
+                                    ▼
+                        ┌───────────────────────┐
+                        │  PASS or              │
+                        │  NEEDS REVISION       │
+                        │  + Feedback           │
+                        └───────────┬───────────┘
+                                    │
+                                    ▼
+                        ┌───────────────────────┐
+                        │ retrieval_review.md   │
+                        └───────────┬───────────┘
+                                    │
+        ════════════════════════════╪══════════════════════════════════
+        ║            STAGE 4: POLICY REVISION                         ║
+        ════════════════════════════╪══════════════════════════════════
+                                    │
+                                    ▼
+                        ┌───────────────────────┐
+                        │  Policy Aggregator    │
+                        │  (Revision Mode)      │
+                        │                       │
+                        │  • Applies feedback   │
+                        │  • Polish & refine    │
+                        │  • Tools for critical │
+                        │    gaps only          │
+                        └───────────┬───────────┘
+                                    │
+                                    ▼
+                        ┌───────────────────────┐
+                        │ policy_retrieval_     │
+                        │ final.md              │◄──── FINAL DELIVERABLE
+                        └───────────┬───────────┘
+                                    │
+        ════════════════════════════╪══════════════════════════════════
+        ║       STAGES 5a/5b: COMPLIANCE ANALYSIS (DISABLED)          ║
+        ════════════════════════════╪══════════════════════════════════
+                                    │
+                    ┌───────────────┴───────────────┐
+                    ▼                               ▼
+        ┌ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ┐   ┌ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ┐
+          analyze_compliance_           review_compliance_
+          status                        analysis
+        │ (commented out)       │   │ (commented out)       │
+        └ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ┘   └ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ┘
+
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                           OUTPUT STRUCTURE                                  │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                             │
+│   output/YYYYMMDD_HHMMSS/                                                   │
+│   ├── hkma_policy_retrieval.md      (Stage 1a)                              │
+│   ├── sfc_policy_retrieval.md       (Stage 1b)                              │
+│   ├── policy_retrieval_aggregated.md (Stage 2)                              │
+│   ├── retrieval_review.md           (Stage 3)                               │
+│   └── policy_retrieval_final.md     (Stage 4) ★ Final Deliverable           │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+## Supported LLM Providers
+
+This project uses crewAI with LiteLLM, supporting 100+ LLM providers. Change the `model` parameter in `crew.py` to switch providers.
+
+| Provider | Model Format | Example |
+|----------|--------------|---------|
+| **OpenAI** | `gpt-*` | `gpt-4o-mini`, `gpt-4o`, `gpt-4-turbo` |
+| **Anthropic** | `claude-*` | `claude-3-5-sonnet-20241022`, `claude-3-opus-20240229` |
+| **Google** | `gemini/*` | `gemini/gemini-1.5-pro`, `gemini/gemini-1.5-flash` |
+| **DeepSeek** | `deepseek/*` | `deepseek/deepseek-chat`, `deepseek/deepseek-coder` |
+| **Azure OpenAI** | `azure/*` | `azure/gpt-4o` |
+| **AWS Bedrock** | `bedrock/*` | `bedrock/anthropic.claude-3-sonnet` |
+| **Ollama (local)** | `ollama/*` | `ollama/llama3`, `ollama/mistral` |
+| **Groq** | `groq/*` | `groq/llama3-70b-8192` |
+
+### Required Environment Variables
+
+| Provider | Environment Variable |
+|----------|---------------------|
+| OpenAI | `OPENAI_API_KEY` |
+| Anthropic | `ANTHROPIC_API_KEY` |
+| Google | `GEMINI_API_KEY` |
+| DeepSeek | `DEEPSEEK_API_KEY` |
+| Azure | `AZURE_API_KEY`, `AZURE_API_BASE` |
+| AWS Bedrock | `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY` |
+| Groq | `GROQ_API_KEY` |
+
+**Current default:** `gpt-4o-mini` (OpenAI)
 
 ## Installation
 
-Ensure you have Python >=3.10 <3.14 installed on your system. This project uses [UV](https://docs.astral.sh/uv/) for dependency management and package handling, offering a seamless setup and execution experience.
-
-First, if you haven't already, install uv:
+Requires Python >=3.10 <3.14. This project uses [UV](https://docs.astral.sh/uv/) for dependency management.
 
 ```bash
+# Install uv if not already installed
 pip install uv
-```
 
-Next, navigate to your project directory and install the dependencies:
-
-(Optional) Lock the dependencies and install them by using the CLI command:
-```bash
+# Install dependencies
+uv sync
+# or
 crewai install
 ```
-### Customizing
 
-**Add your `OPENAI_API_KEY` into the `.env` file**
+## Configuration
 
-- Modify `src/internal_audit_validation_system/config/agents.yaml` to define your agents
-- Modify `src/internal_audit_validation_system/config/tasks.yaml` to define your tasks
-- Modify `src/internal_audit_validation_system/crew.py` to add your own logic, tools and specific args
-- Modify `src/internal_audit_validation_system/main.py` to add custom inputs for your agents and tasks
+### LLM Provider Setup
+
+Create a `.env` file with API keys for your chosen provider(s):
+
+```bash
+# OpenAI (default)
+OPENAI_API_KEY=your-openai-key
+
+# Google Gemini
+GEMINI_API_KEY=your-gemini-key
+
+# Anthropic Claude
+ANTHROPIC_API_KEY=your-anthropic-key
+
+# Groq
+GROQ_API_KEY=your-groq-key
+
+# DeepSeek
+DEEPSEEK_API_KEY=your-deepseek-key
+
+# Azure OpenAI
+AZURE_API_KEY=your-azure-key
+AZURE_API_BASE=https://your-resource.openai.azure.com
+
+# Web search (required for policy retrieval)
+SERPER_API_KEY=your-serper-key
+```
+
+### Switching LLM Provider
+
+Edit `src/internal_audit_validation_system/crew.py` and change the `model` parameter in each agent's LLM configuration:
+
+```python
+# OpenAI (default)
+llm=LLM(model="gpt-4o-mini", temperature=0.7)
+
+# Anthropic Claude
+llm=LLM(model="claude-3-5-sonnet-20241022", temperature=0.7)
+
+# Google Gemini
+llm=LLM(model="gemini/gemini-1.5-flash", temperature=0.7)
+
+# Groq (fast inference)
+llm=LLM(model="groq/llama3-70b-8192", temperature=0.7)
+
+# DeepSeek
+llm=LLM(model="deepseek/deepseek-chat", temperature=0.7)
+
+# Local Ollama
+llm=LLM(model="ollama/llama3", temperature=0.7)
+```
+
+### Customizing Files
+
+- `src/internal_audit_validation_system/config/agents.yaml` - Agent definitions
+- `src/internal_audit_validation_system/config/tasks.yaml` - Task definitions
+- `src/internal_audit_validation_system/crew.py` - Crew logic, tools, and LLM config
+- `src/internal_audit_validation_system/main.py` - Custom inputs
 
 ## Running the Project
 
-To kickstart your crew of AI agents and begin task execution, run this from the root folder of your project:
-
 ```bash
-$ crewai run
+# Run the crew
+python src/internal_audit_validation_system/main.py run
+# or
+crewai run
+
+# Train the crew
+python src/internal_audit_validation_system/main.py train <n_iterations> <filename>
+
+# Replay from a specific task
+python src/internal_audit_validation_system/main.py replay <task_id>
+
+# Test with different models
+python src/internal_audit_validation_system/main.py test <n_iterations> <model_name>
 ```
-
-This command initializes the internal_audit_validation_system Crew, assembling the agents and assigning them tasks as defined in your configuration.
-
-This example, unmodified, will run the create a `report.md` file with the output of a research on LLMs in the root folder.
-
-## Understanding Your Crew
-
-The internal_audit_validation_system Crew is composed of multiple AI agents, each with unique roles, goals, and tools. These agents collaborate on a series of tasks, defined in `config/tasks.yaml`, leveraging their collective skills to achieve complex objectives. The `config/agents.yaml` file outlines the capabilities and configurations of each agent in your crew.
 
 ## Evaluating Task Quality
 
-Use the evaluation harness to identify which task is degrading the overall crew output. Supply the markdown generated by each agent in a JSON payload that follows the structure in `evaluation/sample_payload.json`, then run:
+Use the evaluation harness to identify which task is degrading overall output:
 
 ```bash
 python -m internal_audit_validation_system.evaluation.runner \
@@ -53,14 +285,14 @@ python -m internal_audit_validation_system.evaluation.runner \
   --write-report evaluation/latest_report.json
 ```
 
-The CLI prints a per-task pass rate across structural checks (table format, mandatory sections, readiness verdicts, etc.) and writes detailed findings to the optional report. Failing checks highlight missing sections so you can zero in on the responsible task. Integrate this step into your pipeline by exporting each task’s markdown after a crew run and feeding it to the evaluator.
+The CLI prints per-task pass rates across structural checks and writes detailed findings to the report.
+
+## Documentation
+
+See [CLAUDE.md](CLAUDE.md) for detailed development guidelines, architecture documentation, and configuration reference.
 
 ## Support
 
-For support, questions, or feedback regarding the InternalAuditValidationSystem Crew or crewAI.
-- Visit our [documentation](https://docs.crewai.com)
-- Reach out to us through our [GitHub repository](https://github.com/joaomdmoura/crewai)
-- [Join our Discord](https://discord.com/invite/X4JWnZnxPb)
-- [Chat with our docs](https://chatg.pt/DWjSBZn)
-
-Let's create wonders together with the power and simplicity of crewAI.
+- [crewAI Documentation](https://docs.crewai.com)
+- [crewAI GitHub](https://github.com/joaomdmoura/crewai)
+- [crewAI Discord](https://discord.com/invite/X4JWnZnxPb)
