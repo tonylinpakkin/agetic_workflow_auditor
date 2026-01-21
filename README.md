@@ -1,6 +1,6 @@
 # Internal Audit Validation System
 
-An end-to-end GenAI workflow demonstrating **multi-agent orchestration**, **RAG (Retrieval-Augmented Generation)**, and **multi-provider LLM integration**. Built with crewAI, this system connects LLMs with internal proprietary data to validate audit observations against Hong Kong regulatory policies (HKMA and SFC). Features a 5-stage pipeline with parallel retrieval, reflection-revision quality loops, and automated evaluation.
+An end-to-end GenAI workflow demonstrating **multi-agent orchestration**, **RAG (Retrieval-Augmented Generation)**, and **multi-provider LLM integration**. Built with crewAI, this system connects LLMs with local document library to validate audit observations against Hong Kong regulatory policies (HKMA and SFC). Features a 5-stage pipeline with parallel retrieval, reflection-revision quality loops, and automated evaluation.
 
 ## Key Features
 
