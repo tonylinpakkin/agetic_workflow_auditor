@@ -1,0 +1,10 @@
+[
+  {
+    "audit_observation": "No risk assessment for investment clients",
+    "outputs": {
+      "retrieve_relevant_policies": "<paste markdown output from policy_retrieval_specialist here>",
+      "analyze_compliance_status": "<paste markdown output from audit_analysis_expert here>",
+      "review_compliance_analysis": "<paste markdown output from senior_audit_reviewer here>"
+    }
+  }
+]

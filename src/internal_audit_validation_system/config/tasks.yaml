@@ -1,0 +1,262 @@
+---
+retrieve_hkma_policies:
+  output_file: "output/hkma_policy_retrieval.md"
+  description: |
+    Retrieve relevant HKMA policies and regulations for the audit observation: "{audit_observation}".
+
+    Scope and approach:
+    1. Sweep local policy folders for HKMA-labeled/internal HKMA policy docs using RobustFileReadTool.
+    2. Target HKMA sources only using domain filtering (e.g., site:hkma.gov.hk) and precise keywords.
+    3. Prioritize HKMA SPM modules (e.g., OR-1, TM-E-1, TM-G-2), circulars, guidelines, and FAQs.
+    4. Extract exact section/paragraph IDs, verbatim quotes (≤ 1 sentence), effective dates, and full URLs.
+    5. Do not include SFC or other regulators in this task.
+  expected_output: |-
+    A Markdown table summarizing the relevant policies found, with the following mandatory columns:
+    1. Source Name
+    2. Section / Clause
+    3. Key Excerpt (one sentence max)
+    4. Relevance to Observation (brief note)
+    5. Document Path / URL (required - full file path for local files or URL for web sources; never use `N/A`)
+    6. Effective Date (required - the date when this policy/regulation became effective; use `Unknown` only if truly unavailable)
+    7. Confidence (required - High/Med/Low indicating certainty of relevance and accuracy of information)
+    8. Link or Reference (additional reference info if applicable, otherwise `N/A`)
+    After the table, provide a short bullet list summarizing the top three most critical requirements discovered.
+
+    Quality Checklist:
+    - Use HKMA sources only and provide verbatim quotes with section IDs
+    - Ensure provenance fields (paths, dates, URLs) are complete
+    - Deduplicate overlapping HKMA entries
+    - If nothing relevant is found, state "No relevant policy located"
+  agent: hkma_policy_retrieval_specialist
+  markdown: true
+
+retrieve_sfc_policies:
+  output_file: "output/sfc_policy_retrieval.md"
+  description: |
+    Retrieve relevant SFC policies and regulations for the audit observation: "{audit_observation}".
+
+    Scope and approach:
+    1. Sweep local policy folders for SFC-labeled/internal SFC policy docs using RobustFileReadTool.
+    2. Target SFC sources only using domain filtering (e.g., site:sfc.hk) and precise keywords.
+    3. Prioritize the SFC Code of Conduct, FMCC, Client Assets Rules, UT Code, circulars, FAQs, and guidance notes.
+    4. Extract exact paragraph/section IDs, verbatim quotes (≤ 1 sentence), effective dates, and full URLs.
+    5. Do not include HKMA or other regulators in this task.
+  expected_output: |-
+    A Markdown table summarizing the relevant policies found, with the following mandatory columns:
+    1. Source Name
+    2. Section / Clause
+    3. Key Excerpt (one sentence max)
+    4. Relevance to Observation (brief note)
+    5. Document Path / URL (required - full file path for local files or URL for web sources; never use `N/A`)
+    6. Effective Date (required - the date when this policy/regulation became effective; use `Unknown` only if truly unavailable)
+    7. Confidence (required - High/Med/Low indicating certainty of relevance and accuracy of information)
+    8. Link or Reference (additional reference info if applicable, otherwise `N/A`)
+    After the table, provide a short bullet list summarizing the top three most critical requirements discovered.
+
+    Quality Checklist:
+    - Use SFC sources only and provide verbatim quotes with section/paragraph IDs
+    - Ensure provenance fields (paths, dates, URLs) are complete
+    - Deduplicate overlapping SFC entries
+    - If nothing relevant is found, state "No relevant policy located"
+  agent: sfc_policy_retrieval_specialist
+  markdown: true
+
+retrieve_relevant_policies:
+  output_file: "output/policy_retrieval_aggregated.md"
+  description: |
+    Aggregate and consolidate the policy retrieval results from both HKMA and SFC specialists for the audit observation: "{audit_observation}".
+
+    Your task is to:
+    1. **Combine results** from the HKMA and SFC policy retrieval tasks provided in your context
+    2. **Deduplicate entries** where the same policy or requirement appears in both sources
+    3. **Harmonize formatting** to ensure consistent column values across all entries
+    4. **Verify completeness** of all mandatory fields (Source Name, Section/Clause, Key Excerpt, Relevance, Document Path/URL, Effective Date, Confidence, Link/Reference)
+    5. **Prioritize entries** by relevance and confidence level
+    6. **Cross-reference** overlapping obligations between HKMA and SFC where applicable
+
+    This aggregation ensures a unified view of all regulatory requirements from both primary Hong Kong financial regulators relevant to the audit observation.
+  expected_output: |-
+    A Markdown table summarizing the relevant policies found, with the following mandatory columns:
+    1. Source Name
+    2. Section / Clause
+    3. Key Excerpt (one sentence max)
+    4. Relevance to Observation (brief note)
+    5. Document Path / URL (required - full file path for local files or URL for web sources; never use `N/A`)
+    6. Effective Date (required - the date when this policy/regulation became effective; use `Unknown` only if truly unavailable)
+    7. Confidence (required - High/Med/Low indicating certainty of relevance and accuracy of information)
+    8. Link or Reference (additional reference info if applicable, otherwise `N/A`)
+    Ensure each row stays on a single line so the table renders cleanly. All columns marked as required MUST be populated with meaningful values to ensure proper provenance tracking and discourage vague sourcing.
+    After the table, provide a short bullet list summarizing the top three most critical requirements discovered.
+
+    **Quality Checklist:**
+    - Verify every excerpt is a direct quote from the source document
+    - Flag when a citation is inferred rather than verbatim (note as "paraphrased" or "inferred")
+    - Deduplicate overlapping policies (remove redundant entries citing the same requirement)
+    - State "No relevant policy located" instead of inventing content when no applicable policies are found
+  agent: policy_aggregator
+  context: [retrieve_hkma_policies, retrieve_sfc_policies]
+  markdown: true  # Enable markdown formatting
+
+reflect_policy_retrieval:
+  output_file: "output/retrieval_review.md"
+  description: |
+    Critically review the policy retrieval table for "{audit_observation}" from the previous task.
+
+    IMPORTANT: The table is provided in your context from the previous task output. Do NOT attempt to read any files.
+    Review the table directly from the context provided to you.
+
+    Review the table for quality and completeness by checking:
+    - Section-level citations are specific and accurate (e.g., "Section 4.2.1" not just "Section 4")
+    - Key excerpts are verbatim quotes of ≤ 1 sentence from source documents
+    - Relevance notes clearly explain why each policy applies to the observation
+    - Document paths/URLs are valid and complete (never "N/A")
+    - Effective dates are provided (only "Unknown" if truly unavailable)
+    - Confidence levels are justified
+    - No duplicate or overlapping entries
+    - No weak or indirect matches without justification
+
+    Identify specific issues and provide actionable feedback for improvement.
+    Do not change the table structure (column names or order).
+  expected_output: |
+    1) Verdict: PASS or NEEDS REVISION with a brief rationale.
+    2) Revised Markdown table (corrected, same 8-column schema).
+    3) Bullet list of issues found and exact fixes applied.
+    4) Gaps/additional sources to check next.
+  agent: senior_audit_reviewer
+  context: [retrieve_relevant_policies]
+  markdown: true  # Enable markdown formatting
+
+revise_policy_retrieval:
+  output_file: "output/policy_retrieval_final.md"
+  description: |
+    Create the FINAL, polished version of the policy retrieval table for "{audit_observation}" by incorporating the reflection feedback you received.
+
+    Based on the feedback from the reflection review, improve the policy retrieval table by:
+    1. **Addressing identified gaps** - Add any missing sources or regulations mentioned in the reflection
+    2. **Strengthening weak entries** - Improve entries flagged as Low confidence by finding more authoritative sources
+    3. **Filling missing information** - Complete any incomplete citations, effective dates, or document paths
+    4. **Adding new sources** - If the reflection identified additional regulations to check (e.g., SFC codes/guidelines such as the Code of Conduct, Fund Manager Code of Conduct, Client Assets Rules, or other HKMA guidelines), retrieve and include them and ensure coverage across relevant regulators (HKMA and SFC) where obligations overlap.
+    5. **Ensuring quality** - Verify all entries meet the quality checklist criteria (verbatim quotes, complete provenance, exact citations)
+
+    IMPORTANT: This is a REVISION task, not a new research task. The primary goal is to improve and polish the existing table from the previous tasks.
+    - First, thoroughly review the reflection feedback and the existing policy table from context
+    - Most improvements can be made by refining existing entries (fixing citations, adding dates, correcting URLs)
+    - Only use external research tools (SecureWebScraperTool/PDFDownloadTool/SerperDevTool) if there are CRITICAL gaps that cannot be filled from existing context
+    - If you must use web search, make ONE search at a time and wait for results before deciding if another search is needed
+    - Prefer using RobustFileReadTool for local policies over web searches whenever possible
+
+    CRITICAL URL VERIFICATION RULE - PREVENT HALLUCINATION:
+    - When adding NEW sources that were NOT in the original retrieval outputs, you MUST use SerperDevTool to find and verify the correct URL BEFORE including it in the table
+    - NEVER guess, infer, or fabricate URLs based on patterns you observe in other URLs
+    - NEVER construct URLs by combining domain patterns with document names (e.g., https://www.hkma.gov.hk/media/eng/doc/key-information/guidelines/[DocumentName].pdf)
+    - NEVER assume URL structure follows a predictable pattern - ALWAYS verify through web search
+    - If you cannot find a verified URL through web search after thorough attempts, use "N/A" in the Link column and note "URL not found through web search" in your summary
+    - Only include URLs that you have either: (1) found through SerperDevTool web search, (2) extracted from local documents using RobustFileReadTool, or (3) copied verbatim from the existing context
+    - URL validation will be performed automatically - fabricated URLs will cause the task to fail
+
+    This is the FINAL version - it must be comprehensive, accurate, and ready for compliance analysis.
+  expected_output: |
+    A final, polished Markdown table with the same 8 mandatory columns:
+    1. Source Name
+    2. Section / Clause
+    3. Key Excerpt (one sentence max, verbatim quotes)
+    4. Relevance to Observation
+    5. Document Path / URL (required - never N/A)
+    6. Effective Date (required - never Unknown unless truly unavailable)
+    7. Confidence (High/Med/Low)
+    8. Link or Reference
+
+    The table must:
+    - Include all valid entries from the original retrieval
+    - Include all corrections from the reflection review
+    - Include NEW entries that fill the identified gaps
+    - Have improved confidence levels where research was conducted
+    - Meet all quality checklist criteria (verbatim quotes, complete provenance, exact citations)
+    - Be deduplicated with no redundant entries
+
+    After the table, provide:
+    - Brief summary of improvements made from the reflection feedback
+    - Bullet list of new sources added to fill gaps
+    - Any remaining limitations or areas where information was unavailable despite thorough research
+
+    OPTIONAL: After completing the markdown report, you may use the "Convert Markdown to PDF" tool to create a
+    professionally formatted PDF version of the final report. This is particularly useful for sharing the deliverable
+    with stakeholders. To convert the markdown file to PDF, use the tool with the markdown_file_path parameter
+    pointing to the output markdown file you just created
+  agent: policy_aggregator
+  context: [reflect_policy_retrieval]
+  markdown: true  # Enable markdown formatting
+
+ 
+analyze_compliance_status:
+  output_file: "output/compliance_analysis.md"
+  description: "Analyze the audit observation \"{audit_observation}\" against the
+    retrieved policies to determine the compliance status. Leverage the Markdown
+    findings supplied by the retrieve_relevant_policies task; treat that context as
+    your primary evidence base and do not attempt to read additional local files
+    unless a concrete path is provided. Evaluate whether the observation represents 
+    a policy violation, partial compliance, or full compliance. 
+    If no specific internal policies were found, base your analysis
+    on industry best practices and regulatory standards that typically apply to this
+    type of security control. Provide a definitive assessment (not \"undetermined\")
+    by using available regulatory frameworks and best practices. Identify any gaps,
+    inconsistencies, or areas requiring clarification. Provide reasoned assessment
+    with supporting evidence from the policies or industry standards."
+  expected_output: 'A detailed compliance analysis report that includes: 1) Compliance
+    status assessment (compliant/non-compliant/partial), 2) Supporting evidence from
+    policies, 3) Risk assessment, 4) Areas requiring further investigation or clarification.
+    5) Markdown table supplied by the retrieve_relevant_policies task'
+  agent: audit_analysis_expert
+  markdown: true  # Enable markdown formatting
+
+prepare_peer_review_package:
+  output_file: "output/peer_review_package.md"
+  description: Create a comprehensive peer review package that summarizes the audit
+    observation "{audit_observation}" and the compliance analysis findings, along with
+    relevant policy references for review by other auditors. Format the information
+    for easy peer review and collaboration, highlighting key decision points where
+    peer input would be valuable.
+  expected_output: 'A structured peer review document containing: 1) Executive summary
+    of the audit observation, 2) Key compliance findings and rationale, 3) Critical
+    decision points for peer input, 4) Supporting documentation references, 5) Specific
+    questions for peer reviewers, and 6) Recommended next steps based on peer feedback.'
+  agent: peer_review_coordinator
+  markdown: true  # Enable markdown formatting
+
+reflection_of_compliance_status:
+  output_file: "output/compliance_reflection.md"
+  description: "Conduct a senior-level review of the compliance analysis report for
+    the audit observation \"{audit_observation}\" and the peer review package.
+    Evaluate the reasonableness of conclusions, strength of arguments, adequacy of
+    evidence, and alignment with audit methodology standards. \n\nFocus on:\n- Whether
+    the compliance assessment is properly supported by evidence\n- Accuracy and completeness
+    of regulatory interpretations\n- Logical consistency in the risk assessment\n-
+    Clarity and defensibility of recommendations\n- Identification of any missing
+    considerations or alternative perspectives\n\nProvide constructive feedback to
+    strengthen the audit work quality."
+  expected_output: |-
+    A comprehensive senior review report containing:
+    1. Overall assessment of report quality (satisfactory/needs improvement/unsatisfactory)
+    2. Evaluation of reasonableness - whether conclusions are logical and well-supported
+    3. Analysis of argument strength - quality of evidence, regulatory interpretation accuracy
+    4. Identification of gaps, weaknesses, or missing considerations
+    5. Specific recommendations to strengthen the analysis
+    6. Confirmation of compliance with audit standards and methodology
+    7. Final approval status or required revisions before sign-off
+  agent: senior_audit_reviewer
+  markdown: true  # Enable markdown formatting
+
+review_compliance_analysis:
+  output_file: "output/review_report.md"
+  description: "Review the compliance analysis output generated in the preceding task
+    to pinpoint gaps, weak reasoning, or missing evidence. Concentrate on whether the
+    report covering \"{audit_observation}\" is sufficient for senior-auditor sign-off
+    and call out any insufficiencies that must be addressed."
+  expected_output: |-
+    Produce a concise review memo that includes:
+    1. Overall adequacy assessment of the compliance analysis
+    2. Specific deficiencies or unclear areas with references to the report
+    3. Recommended actions or clarifications required
+    4. Final readiness verdict (ready for approval / needs revision)
+  agent: senior_audit_reviewer
+  markdown: true  # Enable markdown formatting
