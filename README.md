@@ -16,129 +16,134 @@ An end-to-end GenAI workflow demonstrating **multi-agent orchestration**, **RAG 
 
 ## Workflow Architecture
 
+```mermaid
+flowchart TD
+    Start([Start: User Input]) --> Input[/"Audit Observation (String)"/]
+
+    Input --> Stage1{Stage 1: Parallel Policy Retrieval}
+
+    %% Stage 1: Parallel Retrieval
+    Stage1 --> HKMA[HKMA Policy Retrieval Specialist]
+    Stage1 --> SFC[SFC Policy Retrieval Specialist]
+
+    HKMA --> HKMATools{Tool Selection}
+    HKMATools -->|Local Files| FileRead1[RobustFileReadTool]
+    HKMATools -->|Web Search| Serper1[SerperDevTool]
+    Serper1 -->|HTML Page| WebScrape1[SecureWebScraperTool]
+    Serper1 -->|PDF Document| PDFDown1[PDFDownloadTool]
+
+    FileRead1 --> HKMAOut[/"HKMA Policy Table (MD)"/]
+    WebScrape1 --> HKMAOut
+    PDFDown1 --> HKMAOut
+
+    SFC --> SFCTools{Tool Selection}
+    SFCTools -->|Local Files| FileRead2[RobustFileReadTool]
+    SFCTools -->|Web Search| Serper2[SerperDevTool]
+    Serper2 -->|HTML Page| WebScrape2[SecureWebScraperTool]
+    Serper2 -->|PDF Document| PDFDown2[PDFDownloadTool]
+
+    FileRead2 --> SFCOut[/"SFC Policy Table (MD)"/]
+    WebScrape2 --> SFCOut
+    PDFDown2 --> SFCOut
+
+    HKMAOut --> Stage2
+    SFCOut --> Stage2
+
+    %% Stage 2: Aggregation
+    Stage2[Stage 2: Policy Aggregation] --> Aggregator[Policy Aggregator Agent]
+    Aggregator --> Consolidate[Consolidate HKMA + SFC Tables]
+    Consolidate --> Dedupe[Deduplicate Overlapping Policies]
+    Dedupe --> Verify[Verify Completeness & Consistency]
+    Verify --> AggOut[/"Consolidated Policy Table (MD)<br/>8-Column Format"/]
+
+    AggOut --> Stage3
+
+    %% Stage 3: Reflection
+    Stage3[Stage 3: Quality Reflection] --> Reviewer1[Senior Audit Reviewer Agent]
+    Reviewer1 --> ValidateCite[Validate Citations & Excerpts]
+    ValidateCite --> CheckDates[Check Dates & URLs]
+    CheckDates --> IdentifyGaps[Identify Gaps & Weaknesses]
+    IdentifyGaps --> ReflectDecision{Quality Check}
+
+    ReflectDecision -->|All Checks Pass| PassVerdict[/"PASS Verdict + Feedback"/]
+    ReflectDecision -->|Issues Found| RevisionVerdict[/"NEEDS REVISION Verdict<br/>+ Improvement Feedback"/]
+
+    PassVerdict --> Stage4
+    RevisionVerdict --> Stage4
+
+    %% Stage 4: Revision
+    Stage4[Stage 4: Policy Revision] --> Aggregator2[Policy Aggregator Agent]
+    Aggregator2 --> RevisionStrategy{Revision Strategy}
+
+    RevisionStrategy -->|PASS Verdict| MinorPolish[Minor Polishing Only]
+    RevisionStrategy -->|Critical Gaps| AdditionalResearch[Additional Research with Tools]
+    RevisionStrategy -->|Other Issues| RefineEntries[Refine Existing Entries]
+
+    AdditionalResearch --> UseTools[Use RobustFileRead/<br/>SecureWebScraper/<br/>PDFDownload as needed]
+    UseTools --> FinalTable
+
+    MinorPolish --> FinalTable[/"Final Policy Table (MD)<br/>Audit-Ready"/]
+    RefineEntries --> FinalTable
+
+    FinalTable --> Stage5Decision{Analysis Stage<br/>Enabled?}
+
+    %% Stage 5: Compliance Analysis (Currently Disabled)
+    Stage5Decision -->|No Current| EndDisabled([End: Policy Retrieval Complete])
+    Stage5Decision -->|Yes When Enabled| Stage5[Stage 5: Compliance Analysis]
+
+    Stage5 --> AnalysisExpert[Audit Analysis Expert Agent]
+    AnalysisExpert --> AnalyzeCompliance[Analyze Against Policies]
+    AnalyzeCompliance --> ComplianceDecision{Compliance Status}
+
+    ComplianceDecision -->|Violation Found| NonCompliant[Non-Compliant Classification]
+    ComplianceDecision -->|Meets Requirements| Compliant[Compliant Classification]
+    ComplianceDecision -->|Partial Match| PartialCompliant[Partial Compliance Classification]
+
+    NonCompliant --> CompAnalysisOut
+    Compliant --> CompAnalysisOut
+    PartialCompliant --> CompAnalysisOut
+
+    CompAnalysisOut[/"Compliance Analysis Report (MD)<br/>+ Risk Assessment"/] --> ReviewTask
+
+    ReviewTask[Review Task] --> Reviewer2[Senior Audit Reviewer Agent]
+    Reviewer2 --> AssessAdequacy[Assess Analysis Adequacy]
+    AssessAdequacy --> CheckEvidence[Check Evidence Completeness]
+    CheckEvidence --> SignOffDecision{Sign-off Ready?}
+
+    SignOffDecision -->|Adequate| ReadyApproval[/"Ready for Approval"/]
+    SignOffDecision -->|Needs Work| NeedsRevision[/"Needs Revision<br/>+ Deficiencies List"/]
+
+    ReadyApproval --> EndEnabled
+    NeedsRevision --> EndEnabled
+
+    EndEnabled([End: Full Analysis Complete])
+
+    %% Output Management
+    FinalTable -.-> OutputDir[/"Output Directory:<br/>output/{timestamp}/"/]
+    CompAnalysisOut -.-> OutputDir
+
+    OutputDir -.-> OutputFiles["Generated Files:<br/>- hkma_policy_retrieval.md<br/>- sfc_policy_retrieval.md<br/>- policy_retrieval_aggregated.md<br/>- retrieval_review.md<br/>- policy_retrieval_final.md<br/>- compliance_analysis.md (optional)<br/>- review_report.md (optional)"]
+
+    %% Evaluation
+    OutputFiles -.-> Evaluation[Evaluation Framework]
+    Evaluation -.-> QualityChecks["Quality Checks:<br/>- Table structure validation<br/>- Content completeness<br/>- Citation accuracy<br/>- Risk assessment presence"]
+    QualityChecks -.-> EvalOutput[/"evaluation/latest_report.json<br/>Pass Rate Score"/]
+
+    %% Styling
+    classDef agentClass fill:#4A90E2,stroke:#2E5C8A,stroke-width:2px,color:#fff
+    classDef toolClass fill:#50C878,stroke:#2F7C4F,stroke-width:2px,color:#fff
+    classDef outputClass fill:#FFB347,stroke:#CC8A38,stroke-width:2px,color:#000
+    classDef decisionClass fill:#E94B3C,stroke:#A63429,stroke-width:2px,color:#fff
+    classDef stageClass fill:#9B59B6,stroke:#6C3483,stroke-width:3px,color:#fff
+
+    class HKMA,SFC,Aggregator,Reviewer1,Aggregator2,AnalysisExpert,Reviewer2 agentClass
+    class FileRead1,FileRead2,Serper1,Serper2,WebScrape1,WebScrape2,PDFDown1,PDFDown2 toolClass
+    class HKMAOut,SFCOut,AggOut,PassVerdict,RevisionVerdict,FinalTable,CompAnalysisOut,ReadyApproval,NeedsRevision,OutputDir,OutputFiles,EvalOutput outputClass
+    class HKMATools,SFCTools,ReflectDecision,RevisionStrategy,Stage5Decision,ComplianceDecision,SignOffDecision decisionClass
+    class Stage1,Stage2,Stage3,Stage4,Stage5 stageClass
 ```
-┌─────────────────────────────────────────────────────────────────────────────┐
-│                    INTERNAL AUDIT VALIDATION SYSTEM                         │
-│                         Multi-Agent Workflow                                │
-└─────────────────────────────────────────────────────────────────────────────┘
 
-                            ┌──────────────────┐
-                            │  Audit           │
-                            │  Observation     │
-                            │  (Input)         │
-                            └────────┬─────────┘
-                                     │
-        ═════════════════════════════╪═════════════════════════════════
-        ║            STAGE 1: PARALLEL POLICY RETRIEVAL               ║
-        ═════════════════════════════╪═════════════════════════════════
-                                     │
-                    ┌────────────────┴────────────────┐
-                    │                                 │
-                    ▼                                 ▼
-        ┌───────────────────────┐       ┌───────────────────────┐
-        │  HKMA Policy          │       │  SFC Policy           │
-        │  Retrieval Specialist │       │  Retrieval Specialist │
-        │  (max 25 iterations)  │       │  (max 25 iterations)  │
-        │                       │       │                       │
-        │  Tools:               │       │  Tools:               │
-        │  • RobustFileRead     │       │  • RobustFileRead     │
-        │  • SecureWebScraper   │       │  • SecureWebScraper   │
-        │  • PDFDownload        │       │  • PDFDownload        │
-        │  • SerperDev(10)      │       │  • SerperDev(10)      │
-        └───────────┬───────────┘       └───────────┬───────────┘
-                    │                               │
-                    ▼                               ▼
-        ┌───────────────────────┐       ┌───────────────────────┐
-        │ hkma_policy_          │       │ sfc_policy_           │
-        │ retrieval.md          │       │ retrieval.md          │
-        └───────────┬───────────┘       └───────────┬───────────┘
-                    │                               │
-                    └────────────────┬──────────────┘
-                                     │
-        ═════════════════════════════╪═════════════════════════════════
-        ║            STAGE 2: POLICY AGGREGATION                      ║
-        ═════════════════════════════╪═════════════════════════════════
-                                     │
-                                     ▼
-                        ┌───────────────────────┐
-                        │  Policy Aggregator    │
-                        │  (max 15 iterations)  │
-                        │                       │
-                        │  • Consolidates       │
-                        │  • Deduplicates       │
-                        │  • Normalizes         │
-                        │  (NO new retrieval)   │
-                        └───────────┬───────────┘
-                                    │
-                                    ▼
-                        ┌───────────────────────┐
-                        │ policy_retrieval_     │
-                        │ aggregated.md         │
-                        └───────────┬───────────┘
-                                    │
-        ════════════════════════════╪══════════════════════════════════
-        ║            STAGE 3: QUALITY REFLECTION                      ║
-        ════════════════════════════╪══════════════════════════════════
-                                    │
-                                    ▼
-                        ┌───────────────────────┐
-                        │  Senior Audit         │
-                        │  Reviewer             │
-                        │  (max 15 iterations)  │
-                        │                       │
-                        │  • Validates URLs     │
-                        │  • Checks citations   │
-                        │  • Verifies dates     │
-                        │  (NO tools - context  │
-                        │   based review)       │
-                        └───────────┬───────────┘
-                                    │
-                                    ▼
-                        ┌───────────────────────┐
-                        │  PASS or              │
-                        │  NEEDS REVISION       │
-                        │  + Feedback           │
-                        └───────────┬───────────┘
-                                    │
-                                    ▼
-                        ┌───────────────────────┐
-                        │ retrieval_review.md   │
-                        └───────────┬───────────┘
-                                    │
-        ════════════════════════════╪══════════════════════════════════
-        ║            STAGE 4: POLICY REVISION                         ║
-        ════════════════════════════╪══════════════════════════════════
-                                    │
-                                    ▼
-                        ┌───────────────────────┐
-                        │  Policy Aggregator    │
-                        │  (Revision Mode)      │
-                        │                       │
-                        │  • Applies feedback   │
-                        │  • Polish & refine    │
-                        │  • Tools for critical │
-                        │    gaps only          │
-                        └───────────┬───────────┘
-                                    │
-                                    ▼
-                        ┌───────────────────────┐
-                        │ policy_retrieval_     │
-                        │ final.md              │◄──── FINAL DELIVERABLE
-                        └───────────┬───────────┘
-                                    │
-        ════════════════════════════╪══════════════════════════════════
-        ║       STAGES 5a/5b: COMPLIANCE ANALYSIS (DISABLED)          ║
-        ════════════════════════════╪══════════════════════════════════
-                                    │
-                    ┌───────────────┴───────────────┐
-                    ▼                               ▼
-        ┌ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ┐   ┌ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ┐
-          analyze_compliance_           review_compliance_
-          status                        analysis
-        │ (commented out)       │   │ (commented out)       │
-        └ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ┘   └ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ┘
-
-
+```
 ┌─────────────────────────────────────────────────────────────────────────────┐
 │                           OUTPUT STRUCTURE                                  │
 ├─────────────────────────────────────────────────────────────────────────────┤
