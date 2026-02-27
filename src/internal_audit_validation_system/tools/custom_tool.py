@@ -11,12 +11,19 @@ from pathlib import Path
 from PyPDF2 import PdfReader
 import re
 import html
-from reportlab.lib.pagesizes import A4, landscape
-from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
-from reportlab.lib.units import cm
-from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
-from reportlab.lib import colors
-from reportlab.lib.enums import TA_LEFT
+try:
+    from reportlab.lib.pagesizes import A4, landscape
+    from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+    from reportlab.lib.units import cm
+    from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
+    from reportlab.lib import colors
+    from reportlab.lib.enums import TA_LEFT
+    _REPORTLAB_IMPORT_ERROR = None
+except ImportError as e:
+    A4 = landscape = getSampleStyleSheet = ParagraphStyle = cm = None
+    SimpleDocTemplate = Table = TableStyle = Paragraph = Spacer = None
+    colors = TA_LEFT = None
+    _REPORTLAB_IMPORT_ERROR = e
 
 # Suppress SSL warnings
 warnings.filterwarnings('ignore', category=InsecureRequestWarning)
@@ -320,6 +327,13 @@ class MarkdownToPDFTool(BaseTool):
 
     def _run(self, markdown_file_path: str, pdf_output_path: Optional[str] = None) -> str:
         try:
+            if _REPORTLAB_IMPORT_ERROR is not None:
+                return (
+                    "Error: reportlab is required for PDF conversion but is not installed. "
+                    "Install it with `uv add reportlab` (or `uv add --active reportlab` "
+                    "if you are using an active virtual environment), then retry."
+                )
+
             # Resolve file paths
             md_path = Path(markdown_file_path)
             if not md_path.exists():
